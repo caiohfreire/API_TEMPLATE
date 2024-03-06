@@ -1,0 +1,514 @@
+generator client {
+  provider        = "prisma-client-js"
+  output          = "./databases/main"
+  previewFeatures = ["views"]
+  binaryTargets   = ["native", "debian-openssl-1.1.x"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model pedidos_venda {
+  id                     Int                      @id @default(autoincrement())
+  numero                 Int?
+  vendedor_id            Int?
+  vendedor_nome          String?
+  vendedor_id_sirius     Int?
+  cliente_id             Int?
+  cliente_nome           String?
+  cliente_id_sirius      Int?
+  usuario_id             Int?
+  desconto               Float?
+  valor_bruto            Float?
+  valor_liquido          Float?
+  forma_pagamento        String?
+  pagamento              Float?
+  troco                  Float?
+  status                 String?                  @db.VarChar(1)
+  cpf_cnpj               String?                  @map("cpf_cnpj")
+  observacoes            String?
+  data_criacao           DateTime?                @default(now())
+  cliente_contato        String?
+  data_realizacao        DateTime?                @default(now())
+  data_sincronizacao     DateTime?                @default(now())
+  condicao_pagamento_id  Int?
+  entrega_cep            String?
+  entrega_logradouro     String?
+  entrega_numero         String?
+  entrega_complemento    String?
+  entrega_bairro         String?
+  entrega_cidade         String?
+  entrega_uf             String?
+  itens                  pedidos_venda_itens[]
+  produtos_movimentacoes produtos_movimentacoes[]
+}
+
+model pedidos_venda_itens {
+  id                Int           @id @default(autoincrement())
+  pedido_id         Int           @map("pedido_id")
+  produto_id        Int           @map("produto_id")
+  produto_sirius_id Int?          @map("produto_sirius_id")
+  descricao         String?       @map("descricao")
+  unidade           String?       @map("unidade")
+  quantidade        Int?          @map("quantidade")
+  valor_unitario    Float?        @map("valor_unitario")
+  valor_total       Float?        @map("valor_total")
+  ean               String?       @map("ean")
+  codigo            String?       @map("codigo")
+  pedidos_venda     pedidos_venda @relation(fields: [pedido_id], references: [id])
+
+  @@index([pedido_id], map: "pedidos_venda_itens_pedido_id_fkey")
+}
+
+model produtos_movimentacoes {
+  pm_id                 Int            @id @default(autoincrement())
+  pm_pedido_venda_id    Int?
+  pm_produto_id         Int
+  pm_usuario_id         Int
+  pm_saldo_anterior     Float?         @db.Float
+  pm_saldo_atual        Float?         @db.Float
+  pm_quantidade         Float          @db.Float
+  pm_tipo_movimentacao  String
+  pm_data_hora          DateTime       @default(now())
+  pm_numero_nota_fiscal Int?
+  pm_observacao         String?
+  pedidos_venda         pedidos_venda? @relation(fields: [pedidos_vendaId], references: [id])
+  pedidos_vendaId       Int?
+  produtos              produtos?      @relation(fields: [produtosId], references: [id])
+  produtosId            Int?
+
+  @@index([pm_pedido_venda_id], map: "pm_pedido_venda_id")
+  @@index([pm_produto_id], map: "pm_produto_id")
+}
+
+model certificado {
+  id        Int     @id @unique(map: "id") @default(autoincrement())
+  senhaCert String? @db.VarChar(15)
+  serieCert String? @db.VarChar(30)
+  nomeCert  String? @db.VarChar(30)
+  pathCert  String? @db.VarChar(250)
+}
+
+model clientes {
+  id                    BigInt       @id @default(autoincrement())
+  id_sirius             BigInt?
+  status                String       @db.VarChar(1)
+  dataFoiCadastrado     DateTime     @db.DateTime(6)
+  dataUltimaAtualizacao DateTime     @db.DateTime(6)
+  razaoSocial           String       @db.VarChar(60)
+  fantasia              String?      @db.VarChar(60)
+  cpf                   String       @db.VarChar(11)
+  cnpj                  String       @db.VarChar(14)
+  idEstrangeiro         String?      @db.VarChar(20)
+  indIE                 String?      @db.VarChar(1)
+  inscEstadual          String?      @db.VarChar(14)
+  inscMunicipal         String?      @db.VarChar(15)
+  tipoCliente           String       @db.Char(1)
+  exclusivo             Int?         @default(0)
+  vendedor_id           BigInt?      @default(0)
+  vendedor_id_sirius    BigInt?      @default(0)
+  vendedor_nome         String?      @db.VarChar(30)
+  lista_preco_id        BigInt?      @default(0)
+  lista_preco_nome      String?      @db.VarChar(30)
+  condicao_pagamento_id BigInt?
+  contato               String?      @db.VarChar(60)
+  contato_nome          String?      @db.VarChar(60)
+  contatos              contatos[]
+  enderecos             enderecos[]
+  notafiscal            notafiscal[]
+}
+
+model clientes_x_produtos {
+  id                BigInt  @id @default(autoincrement())
+  valor             Decimal @db.Decimal(15, 2)
+  cliente_id        BigInt
+  cliente_id_sirius BigInt?
+  produto_id        BigInt
+  produto_id_sirius BigInt?
+  produto_cod       String  @db.VarChar(60)
+}
+
+model condicoes_pagamento {
+  id        BigInt  @id @default(autoincrement())
+  id_sirius BigInt?
+  descricao String  @db.VarChar(50)
+}
+
+model contatos {
+  id          BigInt   @id @default(autoincrement())
+  contato     String   @db.VarChar(60)
+  tipoContato String   @db.VarChar(1)
+  cliente_id  BigInt
+  clientes    clientes @relation(fields: [cliente_id], references: [id], onUpdate: Restrict, map: "contatos_ibfk_1")
+
+  @@index([cliente_id], map: "cliente_id")
+}
+
+model docreferenciado {
+  idDocReferenciado Int         @id @default(autoincrement())
+  notaFiscal_id     BigInt?
+  tipoDoc           String?     @db.VarChar(60)
+  chave             String?     @db.VarChar(47)
+  notafiscal        notafiscal? @relation(fields: [notaFiscal_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "docreferenciado_ibfk_1")
+
+  @@index([notaFiscal_id], map: "notaFiscal_id")
+}
+
+model enderecos {
+  id           BigInt       @id @default(autoincrement())
+  cep          String       @db.VarChar(8)
+  logradouro   String       @db.VarChar(60)
+  numero       String       @db.VarChar(8)
+  complemento  String       @db.VarChar(60)
+  bairro       String       @db.VarChar(60)
+  cidade       String       @db.VarChar(60)
+  codMun       String       @db.VarChar(7)
+  codUF        String       @db.VarChar(2)
+  uf           String       @db.VarChar(2)
+  cliente_id   BigInt
+  tipoEndereco String       @db.VarChar(1)
+  status       String?      @default("A") @db.Char(1)
+  clientes     clientes     @relation(fields: [cliente_id], references: [id], onUpdate: Restrict, map: "enderecos_ibfk_1")
+  notafiscal   notafiscal[]
+
+  @@index([cliente_id], map: "cliente_id")
+}
+
+model fornecedores {
+  id            BigInt  @id @default(autoincrement())
+  fantasia      String? @db.VarChar(80)
+  razaoSocial   String  @db.VarChar(80)
+  status        String? @db.Char(1)
+  cpfCnpj       String? @db.VarChar(14)
+  tipo          String? @db.Char(1)
+  inscEstadual  String? @db.VarChar(80)
+  cep           String? @db.VarChar(80)
+  logradouro    String? @db.VarChar(80)
+  numero        Int?
+  complemento   String? @db.VarChar(80)
+  bairro        String? @db.VarChar(80)
+  cidade        String? @db.VarChar(80)
+  uf            String? @db.Char(2)
+  email         String? @db.VarChar(80)
+  celular       String? @db.VarChar(80)
+  telefone      String? @db.VarChar(80)
+  fax           String? @db.VarChar(80)
+  pessoaContato String? @db.VarChar(80)
+  observacoes   String? @db.VarChar(255)
+}
+
+model listas_precos {
+  id        BigInt  @id @unique(map: "id") @default(autoincrement())
+  descricao String  @db.VarChar(100)
+  id_sirius BigInt?
+}
+
+model listas_precos_x_produtos {
+  id           BigInt   @id @unique(map: "id") @default(autoincrement())
+  lista_id     BigInt?  @default(0)
+  produto_id   BigInt?  @default(0)
+  produto_desc String?  @db.VarChar(120)
+  valor        Decimal? @default(0.00) @db.Decimal(15, 2)
+  id_sirius    BigInt?
+}
+
+model nfeconfig {
+  idnfeconfig Int     @id @default(autoincrement())
+  tpAmb       String? @db.Char(1)
+  tpImp       String? @db.Char(1)
+}
+
+model notafiscal {
+  id                   BigInt                 @id @unique(map: "id") @default(autoincrement())
+  versao               String                 @db.VarChar(4)
+  chave                String?                @db.VarChar(47)
+  status               String?                @db.VarChar(20)
+  cUf                  String                 @db.VarChar(2)
+  cNf                  String                 @db.VarChar(8)
+  natOp                String                 @db.VarChar(60)
+  modelo               String                 @db.VarChar(2)
+  serie                String                 @db.VarChar(3)
+  nNf                  Int
+  dhEmi                DateTime               @db.DateTime(0)
+  tpNf                 String                 @db.VarChar(1)
+  idDest               String                 @db.VarChar(1)
+  cMunFG               String                 @db.VarChar(7)
+  tpImp                String                 @db.VarChar(1)
+  tpEmis               String                 @db.VarChar(1)
+  cDV                  String                 @db.VarChar(1)
+  tpAmb                String                 @db.VarChar(1)
+  finNfe               String                 @db.VarChar(1)
+  indFinal             String                 @db.VarChar(1)
+  indPres              String                 @db.VarChar(1)
+  procEmi              String                 @db.VarChar(1)
+  verProc              String                 @db.VarChar(20)
+  vBC                  Decimal?               @db.Decimal(15, 2)
+  vICMS                Decimal?               @db.Decimal(15, 2)
+  vICMSDeson           Decimal?               @db.Decimal(15, 2)
+  vFCP                 Decimal?               @db.Decimal(15, 2)
+  vBCST                Decimal?               @db.Decimal(15, 2)
+  vST                  Decimal?               @db.Decimal(15, 2)
+  vFCPST               Decimal?               @db.Decimal(15, 2)
+  vFCPSTRet            Decimal?               @db.Decimal(15, 2)
+  vProd                Decimal?               @db.Decimal(15, 2)
+  vFrete               Decimal?               @db.Decimal(15, 2)
+  vDesc                Decimal?               @db.Decimal(15, 2)
+  vII                  Decimal?               @db.Decimal(15, 2)
+  vIPI                 Decimal?               @db.Decimal(15, 2)
+  vIPIDevol            Decimal?               @db.Decimal(15, 2)
+  vPIS                 Decimal?               @db.Decimal(15, 2)
+  vCOFINS              Decimal?               @db.Decimal(15, 2)
+  vOutro               Decimal?               @db.Decimal(15, 2)
+  vNF                  Decimal?               @db.Decimal(15, 2)
+  vTotTrib             Decimal?               @db.Decimal(15, 2)
+  modFrete             String?                @db.VarChar(1)
+  emitCnpjcpf          String?                @db.VarChar(14)
+  emitxNome            String?                @db.VarChar(60)
+  enderEmitxLgr        String?                @db.VarChar(60)
+  enderEmitNro         String?                @db.VarChar(60)
+  enderEmitxCpl        String?                @db.VarChar(60)
+  enderEmitxBairro     String?                @db.VarChar(60)
+  enderEmitcMun        String?                @db.VarChar(7)
+  enderEmitxMun        String?                @db.VarChar(60)
+  enderEmitUF          String?                @db.VarChar(2)
+  enderEmitCEP         String?                @db.VarChar(8)
+  enderEmitFone        String?                @db.VarChar(14)
+  enderEmitIE          String?                @db.VarChar(14)
+  emitCrt              String?                @db.VarChar(1)
+  destCNPJCPF          String?                @db.VarChar(14)
+  destIdEstrangeiro    String?                @db.VarChar(20)
+  destxNome            String?                @db.VarChar(60)
+  destIE               String?                @db.VarChar(14)
+  destEmail            String?                @db.VarChar(250)
+  destFone             String?                @db.VarChar(14)
+  cliente_id           BigInt?
+  enderDestxLgr        String?                @db.VarChar(60)
+  enderDestnro         String?                @db.VarChar(60)
+  enderDestxCpl        String?                @db.VarChar(60)
+  enderDestxBairro     String?                @db.VarChar(60)
+  enderDestcMun        String?                @db.VarChar(7)
+  enderDestxMun        String?                @db.VarChar(60)
+  enderDestUF          String?                @db.VarChar(2)
+  enderDestCep         String?                @db.VarChar(8)
+  enderDestFone        String?                @db.VarChar(14)
+  endereco_id          BigInt?
+  indIEDest            String?                @db.VarChar(1)
+  emitInscEstadual     String?                @db.VarChar(14)
+  xml                  Bytes?                 @db.Blob
+  protocolo            String?                @db.VarChar(20)
+  dhRecbto             DateTime?              @db.DateTime(0)
+  infCpl               Bytes?                 @db.Blob
+  infAdFisco           Bytes?                 @db.Blob
+  statusCode           Int?
+  xMotivo              String?                @db.VarChar(60)
+  retWS                Bytes?                 @db.Blob
+  docreferenciado      docreferenciado[]
+  clientes             clientes?              @relation(fields: [cliente_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "notafiscal_ibfk_1")
+  enderecos            enderecos?             @relation(fields: [endereco_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "notafiscal_ibfk_2")
+  notafiscalpagamentos notafiscalpagamentos[]
+
+  @@index([cliente_id], map: "cliente_id")
+  @@index([endereco_id], map: "endereco_id")
+}
+
+model notafiscalitem {
+  id              Int      @id @unique(map: "id")
+  cProd           String   @db.VarChar(60)
+  cEAN            String   @db.VarChar(14)
+  xProd           String   @db.VarChar(120)
+  ncm             String   @db.VarChar(8)
+  cest            String   @db.VarChar(7)
+  cfop            String   @db.VarChar(4)
+  uCom            String   @db.VarChar(6)
+  qCom            Decimal  @db.Decimal(15, 4)
+  vUnCom          Decimal  @db.Decimal(21, 10)
+  vProd           Decimal? @db.Decimal(15, 2)
+  cEANTrib        String   @db.VarChar(14)
+  uTrib           String   @db.VarChar(6)
+  qTrib           Decimal  @db.Decimal(15, 4)
+  indTotal        String   @db.VarChar(1)
+  cst             String   @db.VarChar(3)
+  modBc           String?  @db.VarChar(1)
+  vBc             Decimal? @db.Decimal(15, 2)
+  pIcms           Decimal? @db.Decimal(7, 4)
+  vIcms           Decimal? @db.Decimal(15, 2)
+  pFcp            Decimal? @db.Decimal(7, 4)
+  vFcp            Decimal? @db.Decimal(15, 2)
+  vBCFCP          Decimal? @db.Decimal(15, 2)
+  modBCST         String?  @db.VarChar(1)
+  vBCST           Decimal? @db.Decimal(15, 2)
+  pICMSST         Decimal? @db.Decimal(7, 4)
+  vICMSST         Decimal? @db.Decimal(15, 2)
+  vBCFCPST        Decimal? @db.Decimal(15, 2)
+  pFCPST          Decimal? @db.Decimal(7, 4)
+  vFCPST          Decimal? @db.Decimal(15, 2)
+  pRedBC          Decimal? @db.Decimal(7, 4)
+  vICMSDeson      Decimal? @db.Decimal(15, 2)
+  motDesICMS      String?  @db.VarChar(2)
+  vBCSTRet        Decimal? @db.Decimal(15, 2)
+  orig            String   @db.VarChar(1)
+  pST             Decimal? @db.Decimal(7, 4)
+  vICMSSTRet      Decimal? @db.Decimal(15, 2)
+  vBCFCPSTRet     Decimal? @db.Decimal(15, 2)
+  pFCPSTRet       Decimal? @db.Decimal(7, 4)
+  vFCPSTRet       Decimal? @db.Decimal(15, 2)
+  pRedBCEfet      Decimal? @db.Decimal(7, 4)
+  vBCEfet         Decimal? @db.Decimal(15, 2)
+  pICMSEfet       Decimal? @db.Decimal(7, 4)
+  vICMSEfet       Decimal? @db.Decimal(15, 2)
+  pBCOp           Decimal? @db.Decimal(7, 4)
+  UFST            String?  @db.VarChar(2)
+  CSOSN           String?  @db.VarChar(3)
+  pCredSN         Decimal? @db.Decimal(7, 4)
+  vCredICMSSN     Decimal? @db.Decimal(15, 2)
+  notafiscal_id   Int
+  vUnTrib         Decimal? @db.Decimal(21, 10)
+  produto_id      Int?
+  vFrete          Decimal? @db.Decimal(15, 2)
+  vOutro          Decimal? @db.Decimal(15, 2)
+  vDesc           Decimal? @db.Decimal(15, 2)
+  cstPIS          String?  @db.Char(2)
+  vBCPIS          Decimal? @db.Decimal(15, 2)
+  pPIS            Decimal? @db.Decimal(7, 4)
+  vPIS            Decimal? @db.Decimal(15, 2)
+  qBCPISProd      Decimal? @db.Decimal(16, 4)
+  vAliqPISProd    Decimal? @db.Decimal(15, 4)
+  cstCOFINS       String?  @db.Char(2)
+  vBCCOFINS       Decimal? @db.Decimal(15, 2)
+  pCOFINS         Decimal? @db.Decimal(7, 4)
+  vCOFINS         Decimal? @db.Decimal(15, 2)
+  qBCCOFINSProd   Decimal? @db.Decimal(16, 4)
+  vAliqCOFINSProd Decimal? @db.Decimal(15, 4)
+  pDevol          Decimal? @db.Decimal(5, 2)
+  vIPIDevol       Decimal? @db.Decimal(15, 2)
+  pRedBCST        Decimal? @db.Decimal(7, 4)
+  pMVAST          Decimal? @db.Decimal(7, 4)
+
+  @@index([notafiscal_id], map: "notafiscal_id")
+  @@index([produto_id], map: "produto_id")
+}
+
+model notafiscalpagamentos {
+  id              Int        @id @default(autoincrement())
+  indicacao       String?    @db.VarChar(1)
+  tipo            String?    @db.VarChar(2)
+  valor           Decimal?   @db.Decimal(15, 2)
+  data_criacao    DateTime?  @db.DateTime(0)
+  data_vencimento DateTime?  @db.DateTime(0)
+  notaFiscal_id   BigInt
+  notafiscal      notafiscal @relation(fields: [notaFiscal_id], references: [id], onUpdate: Restrict, map: "notafiscalpagamentos_ibfk_1")
+
+  @@index([notaFiscal_id], map: "notaFiscal_id")
+}
+
+model pedido_compra_itens {
+  id                    BigInt   @id @default(autoincrement())
+  produto_id            BigInt
+  pedido_id             BigInt
+  unidade               String?  @db.VarChar(20)
+  complemento_descricao String?  @db.VarChar(30)
+  observacoes           String?  @db.VarChar(30)
+  quantidade            Int
+  valor_unitario        Decimal  @db.Decimal(15, 2)
+  valor_total           Decimal? @db.Decimal(15, 2)
+  produto_descricao     String?  @db.VarChar(120)
+}
+
+model pedido_compra_pagamentos {
+  id              BigInt    @id @default(autoincrement())
+  pedido_id       BigInt
+  data_criacao    DateTime  @db.DateTime(0)
+  data_vencimento DateTime? @db.DateTime(0)
+  forma_pagamento String?   @db.VarChar(2)
+  valor           Decimal   @db.Decimal(15, 2)
+}
+
+model pedidos_compra {
+  id               BigInt    @id @default(autoincrement())
+  fornecedor_id    BigInt
+  status           String    @db.VarChar(1)
+  data_criacao     DateTime  @db.DateTime(0)
+  data_emissao     DateTime  @db.DateTime(0)
+  data_realizado   DateTime? @db.DateTime(0)
+  forma_pagamento  String?   @db.VarChar(2)
+  valor_total      Decimal?  @db.Decimal(15, 2)
+  num_pedido_venda String?   @db.VarChar(30)
+  num_nf           String?   @db.VarChar(30)
+  descricao        String?   @db.VarChar(100)
+  observacoes      String?   @db.VarChar(100)
+}
+
+model pedidos_venda_pagamentos {
+  id              BigInt   @id @default(autoincrement())
+  pedido_id       BigInt?
+  forma_pagamento String   @db.VarChar(2)
+  valor           Decimal  @db.Decimal(15, 2)
+  data_criacao    DateTime @db.DateTime(0)
+  data_vencimento DateTime @db.DateTime(0)
+}
+
+model produtos {
+  id                     Int                      @id @default(autoincrement())
+  id_sirius              Int?
+  codProduto             String                   @db.VarChar(60)
+  descricao              String                   @db.VarChar(120)
+  codEAN                 String                   @db.VarChar(14)
+  ncm                    String                   @db.VarChar(8)
+  cfop                   String                   @db.VarChar(4)
+  unCom                  String?                  @db.VarChar(6)
+  qtdCom                 Float?                   @db.Float
+  vlrUnCom               Float?                   @db.Float
+  vlrProd                Float?                   @db.Float
+  codEANTrib             String?                  @db.VarChar(14)
+  unTrib                 String?                  @db.VarChar(6)
+  qtdTrib                Float?                   @db.Float
+  vlrUnTrib              Float?                   @db.Float
+  saldo                  Float                    @db.Float
+  status                 String                   @db.VarChar(1)
+  produtos_movimentacoes produtos_movimentacoes[]
+}
+
+model vendedores {
+  id            BigInt   @id @default(autoincrement())
+  id_sirius     BigInt?
+  nome          String   @db.VarChar(80)
+  apelido       String?  @db.VarChar(80)
+  status        String   @db.Char(1)
+  cpf           String?  @db.VarChar(14)
+  cnpj          String?  @db.VarChar(18)
+  inscEstadual  String?  @db.VarChar(15)
+  rg            String?  @db.VarChar(12)
+  telefone      String?  @db.VarChar(21)
+  celular       String?  @db.VarChar(20)
+  email         String?  @db.VarChar(80)
+  fax           String?  @db.VarChar(80)
+  pessoaContato String?  @db.VarChar(80)
+  cep           String?  @db.VarChar(10)
+  logradouro    String?  @db.VarChar(80)
+  numero        Int?
+  complemento   String?  @db.VarChar(80)
+  bairro        String?  @db.VarChar(80)
+  regiao        String?  @db.VarChar(80)
+  cidade        String?  @db.VarChar(80)
+  uf            String?  @db.Char(2)
+  departamento  String?  @db.VarChar(80)
+  porcComissao  Decimal? @db.Decimal(7, 4)
+  porcDescMax   Decimal? @db.Decimal(7, 4)
+  nomeBanco     String?  @db.VarChar(80)
+  numeroBanco   String?  @db.VarChar(80)
+  agencia       String?  @db.VarChar(80)
+  digitoAgencia String?  @db.VarChar(80)
+  conta         String?  @db.VarChar(80)
+  digitoConta   String?  @db.VarChar(80)
+  observacoes   String?  @db.VarChar(255)
+  idUser        BigInt?
+}
+
+model vendedores_x_usuarios {
+  id                 BigInt  @id @default(autoincrement())
+  id_usuario         BigInt?
+  id_vendedor        BigInt?
+  id_vendedor_sirius BigInt?
+}

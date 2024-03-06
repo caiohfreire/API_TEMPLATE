@@ -1,0 +1,103 @@
+generator client {
+  provider      = "prisma-client-js"
+  output        = "./databases/auth"
+  previewFeatures = ["views"]
+  binaryTargets = ["native", "debian-openssl-1.1.x"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("AUTH_DATABASE_URL")
+}
+
+model acoes {
+  id               Int              @id @unique(map: "id") @default(autoincrement())
+  descricao        String           @db.VarChar(100)
+  descricao_titulo String           @db.VarChar(100)
+  tabela           String           @db.VarChar(40)
+  tabela_titulo    String           @db.VarChar(40)
+  valor_padrao     Int?             @default(0)
+  acoes_x_grupos   acoes_x_grupos[]
+}
+
+model acoes_x_grupos {
+  id               Int             @id @unique(map: "id") @default(autoincrement())
+  id_acao          Int
+  id_grupo_usuario Int
+  permite          Int
+  acoes            acoes           @relation(fields: [id_acao], references: [id], onUpdate: Restrict, map: "acoes_x_grupos_ibfk_1")
+  grupos_usuarios  grupos_usuarios @relation(fields: [id_grupo_usuario], references: [id], onUpdate: Restrict, map: "acoes_x_grupos_ibfk_2")
+
+  @@index([id_acao], map: "id_acao")
+  @@index([id_grupo_usuario], map: "id_grupo_usuario")
+}
+
+model empresas {
+  id                  Int                   @id @unique(map: "id") @default(autoincrement())
+  cnpj                String                @db.VarChar(18)
+  xRazaoSocial        String                @db.VarChar(60)
+  xFant               String                @db.VarChar(60)
+  xLgr                String                @db.VarChar(60)
+  nro                 String                @db.VarChar(60)
+  xCpl                String                @db.VarChar(60)
+  xBairro             String                @db.VarChar(60)
+  cMun                String                @db.VarChar(7)
+  xMun                String                @db.VarChar(60)
+  uf                  String                @db.Char(2)
+  cep                 String                @db.VarChar(8)
+  fone                String                @db.VarChar(14)
+  ie                  String                @db.VarChar(14)
+  crt                 String                @db.VarChar(1)
+  token               String                @unique(map: "token") @db.VarChar(128)
+  banco               String                @db.VarChar(100)
+  status              String                @db.VarChar(1)
+  email               String?               @db.VarChar(129)
+  grupos_usuarios     grupos_usuarios[]
+  usuarios_x_empresas usuarios_x_empresas[]
+}
+
+model grupos_usuarios {
+  id                  Int                   @id @unique(map: "id") @default(autoincrement())
+  nome                String                @db.VarChar(50)
+  id_empresa          Int
+  pagina_inicial      String                @default("notas-fiscais") @db.VarChar(20)
+  acoes_x_grupos      acoes_x_grupos[]
+  empresas            empresas              @relation(fields: [id_empresa], references: [id], onUpdate: Restrict, map: "grupos_usuarios_ibfk_1")
+  usuarios_x_empresas usuarios_x_empresas[]
+
+  @@index([id_empresa], map: "id_empresa")
+}
+
+model usuarios {
+  id                  Int                   @id @unique(map: "id") @default(autoincrement())
+  nome                String?               @db.VarChar(60)
+  ultimo_nome         String?               @db.VarChar(60)
+  email               String?               @db.VarChar(150)
+  senha               String?
+  celular             String?               @db.VarChar(14)
+  status              String?               @default("A") @db.Char(1)
+  user_token          String                @unique(map: "user_token") @db.VarChar(128)
+  exclusivo           String?               @default("N") @db.Char(1)
+  usuarios_x_empresas usuarios_x_empresas[]
+}
+
+model usuarios_x_empresas {
+  id               Int             @id @unique(map: "id") @default(autoincrement())
+  id_empresa       Int
+  id_usuario       Int
+  id_grupo_usuario Int
+  empresas         empresas        @relation(fields: [id_empresa], references: [id], onUpdate: Restrict, map: "usuarios_x_empresas_ibfk_1")
+  usuarios         usuarios        @relation(fields: [id_usuario], references: [id], onUpdate: Restrict, map: "usuarios_x_empresas_ibfk_2")
+  grupos_usuarios  grupos_usuarios @relation(fields: [id_grupo_usuario], references: [id], onUpdate: Restrict, map: "usuarios_x_empresas_ibfk_3")
+
+  @@index([id_empresa], map: "id_empresa")
+  @@index([id_grupo_usuario], map: "id_grupo_usuario")
+  @@index([id_usuario], map: "id_usuario")
+}
+
+model parametros {
+  id             Int    @id @unique(map: "id_UNIQUE") @default(autoincrement())
+  parametro      String @unique(map: "parametro_UNIQUE") @db.VarChar(80)
+  valorParametro Int
+  descricao      String @db.VarChar(256)
+}
